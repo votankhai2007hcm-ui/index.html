@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>🎬 Video Library PRO MAX</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #1c1c1c;
+    color: white;
+}
+
+.top-bar {
+    background: #111;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    padding: 6px 10px;
+    border: none;
+    cursor: pointer;
+}
+
+.add-btn { background: #28a745; color: white; }
+.watch-btn { background: #E50914; color: white; }
+.delete-btn { background: #555; color: white; }
+
+input, select {
+    padding: 5px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.card {
+    background: #2d2d2d;
+    padding: 10px;
+    border-radius: 8px;
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: scale(1.05);
+    background: #3a3a3a;
+}
+
+video {
+    width: 100%;
+    border-radius: 5px;
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+    <button class="add-btn" onclick="addVideo()">+ Thêm Video</button>
+    <input type="text" id="search" placeholder="Tìm kiếm..." oninput="render()">
+    <select id="genreFilter" onchange="render()">
+        <option value="Tất cả">Tất cả</option>
+    </select>
+    <button onclick="showAll()">Tất cả</button>
+    <button onclick="showWatched()">Đã xem</button>
+</div>
+
+<div class="grid" id="videoGrid"></div>
+
+<script>
+let videos = JSON.parse(localStorage.getItem("videos")) || [];
+let currentPage = "all";
+
+function saveData() {
+    localStorage.setItem("videos", JSON.stringify(videos));
+}
+
+function addVideo() {
+    let title = prompt("Tên video:");
+    if (!title) return;
+
+    let genre = prompt("Thể loại:") || "Khác";
+    let url = prompt("Nhập link video (hoặc URL mp4):");
+
+    if (!url) return;
+
+    videos.push({
+        title,
+        genre,
+        url,
+        rating: 5,
+        watched: false
+    });
+
+    saveData();
+    render();
+}
+
+function deleteVideo(index) {
+    if (confirm("Xóa video này?")) {
+        videos.splice(index, 1);
+        saveData();
+        render();
+    }
+}
+
+function markWatched(index) {
+    videos[index].watched = true;
+    saveData();
+    render();
+}
+
+function showAll() {
+    currentPage = "all";
+    render();
+}
+
+function showWatched() {
+    currentPage = "watched";
+    render();
+}
+
+function updateGenres() {
+    let select = document.getElementById("genreFilter");
+    let genres = [...new Set(videos.map(v => v.genre))];
+
+    select.innerHTML = '<option value="Tất cả">Tất cả</option>';
+    genres.forEach(g => {
+        select.innerHTML += `<option value="${g}">${g}</option>`;
+    });
+}
+
+function render() {
+    updateGenres();
+
+    let grid = document.getElementById("videoGrid");
+    grid.innerHTML = "";
+
+    let keyword = document.getElementById("search").value.toLowerCase();
+    let selectedGenre = document.getElementById("genreFilter").value;
+
+    let filtered = videos.filter(v => {
+        if (currentPage === "watched" && !v.watched) return false;
+        if (selectedGenre !== "Tất cả" && v.genre !== selectedGenre) return false;
+        if (!v.title.toLowerCase().includes(keyword)) return false;
+        return true;
+    });
+
+    filtered.forEach((v, index) => {
+        grid.innerHTML += `
+            <div class="card">
+                <h3>${v.title}</h3>
+                <p>📂 ${v.genre}</p>
+                <p>⭐ ${v.rating}/5</p>
+                <p>${v.watched ? "✔ Đã xem" : "Chưa xem"}</p>
+                <video src="${v.url}" controls></video>
+                <button class="watch-btn" onclick="markWatched(${index})">Đánh dấu đã xem</button>
+                <button class="delete-btn" onclick="deleteVideo(${index})">Xóa</button>
+            </div>
+        `;
+    });
+}
+
+render();
+</script>
+
+</body>
+</html>
